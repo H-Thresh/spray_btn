@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>cute · 动效按钮</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        min-height: 100vh;
+        background: linear-gradient(145deg, #fdeff2, #ffe6ea);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Comic Sans MS", "Chalkboard SE", "幼圆", Yuanti SC,
+          cursive, sans-serif;
+        padding: 16px;
+        margin: 0;
+        touch-action: manipulation;
+      }
+      .container {
+        width: 100%;
+        max-width: 400px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+      }
+      .cute-header {
+        background-color: #ffb7c5;
+        color: #ffffff;
+        padding: 12px 28px;
+        border-radius: 60px;
+        font-size: 22px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        box-shadow: 0 8px 0 #e07a8a, 0 10px 20px rgba(255, 140, 170, 0.3);
+        text-shadow: 2px 2px 0 #e07a8a;
+        transform: rotate(-1deg);
+        border: 3px solid white;
+      }
+      /* 可爱按钮区域 */
+      .cute-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 15px;
+      }
+      .cute-btn {
+        position: relative;
+        width: 240px;
+        height: 240px;
+        border-radius: 100px 100px 120px 120px;
+        background: #ffb6d1; /* 粉红 */
+        border: 6px solid white;
+        box-shadow: 0 16px 0 #d96c8c, 0 20px 30px rgba(236, 120, 144, 0.5);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.1s cubic-bezier(0.2, 1.2, 0.5, 1.5);
+        touch-action: none;
+        outline: none;
+        font-family: inherit;
+        z-index: 10;
+      }
+      .cute-btn:active {
+        transform: translateY(10px) scale(0.97);
+        box-shadow: 0 8px 0 #d96c8c, 0 15px 25px #ff9eb5;
+      }
+      /* 俏皮大眼睛 */
+      .btn-eyes {
+        display: flex;
+        gap: 30px;
+        margin-bottom: 15px;
+        margin-top: 10px;
+      }
+      .eye {
+        width: 35px;
+        height: 45px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 -4px 0 #aaa, 0 4px 0 #d96c8c;
+        border: 2px solid #f08ca0;
+      }
+      .pupil {
+        width: 20px;
+        height: 20px;
+        background: #7b3b4a;
+        border-radius: 50%;
+        transition: transform 0.05s;
+        border: 3px solid #b1546e;
+      }
+      .blush {
+        width: 20px;
+        height: 12px;
+        background: #ff8aae;
+        border-radius: 50%;
+        position: absolute;
+        bottom: 70px;
+        left: 45px;
+        opacity: 0.6;
+        filter: blur(3px);
+      }
+      .blush.right {
+        left: auto;
+        right: 45px;
+      }
+      .btn-mouth {
+        font-size: 40px;
+        line-height: 1;
+        margin-top: -5px;
+        color: #9e4a62;
+        filter: drop-shadow(0 4px 0 #f2a0b7);
+      }
+      .btn-text {
+        font-size: 32px;
+        font-weight: 800;
+        color: white;
+        text-shadow: 3px 3px 0 #d96c8c;
+        margin-top: 5px;
+        background: #ff9eb5;
+        padding: 0 25px;
+        border-radius: 40px;
+        border: 3px solid white;
+        transform: rotate(-2deg);
+      }
+      /* 泡泡画布 (跟随手指) */
+      #bubbleCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 20;
+        border-radius: 120px;
+      }
+      .cute-footer {
+        background-color: #ffe2e9;
+        border-radius: 50px;
+        padding: 12px 24px;
+        color: #cb6f86;
+        font-size: 18px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 3px solid white;
+        box-shadow: 0 5px 0 #e7a1b4;
+      }
+      .cute-footer span {
+        font-size: 26px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="cute-wrapper" id="cuteWrapper">
+        <button class="cute-btn" id="cuteBtn">
+          <div class="btn-eyes">
+            <div class="eye"><div class="pupil" id="leftPupil"></div></div>
+            <div class="eye"><div class="pupil" id="rightPupil"></div></div>
+          </div>
+          <div class="blush"></div>
+          <div class="blush right"></div>
+          <div class="btn-mouth">👄</div>
+          <div class="btn-text">💧喷药💧</div>
+        </button>
+
+        <canvas id="bubbleCanvas" width="400" height="400"></canvas>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const cuteBtn = document.getElementById("cuteBtn");
+        const canvas = document.getElementById("bubbleCanvas");
+        const ctx = canvas.getContext("2d");
+        const leftPupil = document.getElementById("leftPupil");
+        const rightPupil = document.getElementById("rightPupil");
+
+        // 调整canvas尺寸
+        function resizeCanvas() {
+          const rect = cuteBtn.getBoundingClientRect();
+          canvas.style.top = rect.top + "px";
+          canvas.style.left = rect.left + "px";
+          canvas.style.width = rect.width + "px";
+          canvas.style.height = rect.height + "px";
+          canvas.width = rect.width * 2;
+          canvas.height = rect.height * 2;
+        }
+
+        // 泡泡数组 (俏皮可爱风格)
+        let bubbles = [];
+        const MAX_BUBBLES = 40;
+
+        // 获取按钮中心
+        function getBtnCenter() {
+          const rect = cuteBtn.getBoundingClientRect();
+          return {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+          };
+        }
+
+        // 添加爱心/泡泡粒子
+        function addBubble(touchX, touchY) {
+          const center = getBtnCenter();
+          // 从按钮中心偏向触摸位置偏移 (但让气泡从按钮"嘴巴"附近冒出更可爱)
+          const startX = center.x + (touchX - center.x) * 0.3;
+          const startY = center.y + (touchY - center.y) * 0.2 - 10; // 偏上一点像从嘴里冒泡
+
+          // 随机速度，但总体向上飘且有爱心形状
+          const angle =
+            Math.atan2(touchY - center.y, touchX - center.x) +
+            (Math.random() - 0.5) * 1.2;
+          const speed = 0.7 + Math.random() * 1.2;
+          const vx = Math.cos(angle) * speed * 0.8;
+          const vy = Math.sin(angle) * speed * 0.8 - 0.6; // 加一点上浮
+
+          // 随机爱心或者星星形状标记
+          const type = Math.random() > 0.4 ? "heart" : "bubble"; // 爱心比例高
+
+          bubbles.push({
+            x: startX,
+            y: startY,
+            vx: vx,
+            vy: vy,
+            life: 1.0,
+            size: 14 + Math.random() * 22,
+            type: type,
+            rotation: Math.random() * 360,
+          });
+        }
+
+        // 绘制所有泡泡
+        function drawBubbles(activeTouch = null) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          if (activeTouch) {
+            const rect = cuteBtn.getBoundingClientRect();
+            if (
+              activeTouch.clientX >= rect.left &&
+              activeTouch.clientX <= rect.right &&
+              activeTouch.clientY >= rect.top &&
+              activeTouch.clientY <= rect.bottom
+            ) {
+              // 每帧生成多个泡泡，更丰富
+              for (let i = 0; i < 2; i++) {
+                addBubble(activeTouch.clientX, activeTouch.clientY);
+              }
+            }
+          }
+
+          // 限制数量
+          if (bubbles.length > MAX_BUBBLES) {
+            bubbles = bubbles.slice(-MAX_BUBBLES);
+          }
+
+          const canvasRect = canvas.getBoundingClientRect();
+          const offsetX = canvasRect.left;
+          const offsetY = canvasRect.top;
+          const scaleX = canvas.width / canvasRect.width;
+          const scaleY = canvas.height / canvasRect.height;
+
+          for (let i = bubbles.length - 1; i >= 0; i--) {
+            const b = bubbles[i];
+            b.x += b.vx;
+            b.y += b.vy;
+            b.vx *= 0.99;
+            b.vy *= 0.99;
+            b.life -= 0.007; // 慢慢消失
+            b.rotation += 0.5;
+
+            if (b.life <= 0.02 || b.y < -100) {
+              bubbles.splice(i, 1);
+              continue;
+            }
+
+            // 画布坐标
+            const canvasX = (b.x - offsetX) * scaleX;
+            const canvasY = (b.y - offsetY) * scaleY;
+            const size = b.size * b.life;
+
+            ctx.save();
+            ctx.translate(canvasX, canvasY);
+            ctx.rotate((b.rotation * Math.PI) / 180);
+            ctx.globalAlpha = b.life * 0.9;
+
+            if (b.type === "heart") {
+              // 画爱心
+              ctx.fillStyle = "#ff69b4";
+              ctx.shadowColor = "#ffb6c1";
+              ctx.shadowBlur = 20;
+              // 简易爱心
+              ctx.beginPath();
+              ctx.moveTo(0, size * 0.3);
+              ctx.bezierCurveTo(
+                -size * 0.5,
+                -size * 0.3,
+                -size * 0.2,
+                -size * 0.7,
+                0,
+                -size * 0.4
+              );
+              ctx.bezierCurveTo(
+                size * 0.2,
+                -size * 0.7,
+                size * 0.5,
+                -size * 0.3,
+                0,
+                size * 0.3
+              );
+              ctx.fill();
+            } else {
+              // 彩虹泡泡
+              const gradient = ctx.createRadialGradient(
+                -5,
+                -5,
+                2,
+                0,
+                0,
+                size * 0.8
+              );
+              gradient.addColorStop(0, "#ffe0f0");
+              gradient.addColorStop(0.5, "#ffa5c3");
+              gradient.addColorStop(1, "#ff6f9d");
+              ctx.fillStyle = gradient;
+              ctx.shadowColor = "#ffbfd5";
+              ctx.shadowBlur = 22;
+              ctx.beginPath();
+              ctx.arc(0, 0, size * 0.6, 0, Math.PI * 2);
+              ctx.fill();
+              // 高光
+              ctx.shadowBlur = 8;
+              ctx.fillStyle = "rgba(255,255,255,0.6)";
+              ctx.beginPath();
+              ctx.arc(-size * 0.15, -size * 0.15, size * 0.15, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            ctx.restore();
+          }
+
+          if (bubbles.length > 0 || activeTouch) {
+            requestAnimationFrame(() => drawBubbles(activeTouch));
+          } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+        }
+
+        // 瞳孔跟随手指 (俏皮元素)
+        function updatePupils(touchX, touchY) {
+          const btnRect = cuteBtn.getBoundingClientRect();
+          const leftEyeRect = document
+            .querySelector(".eye")
+            .getBoundingClientRect(); // 近似
+          // 简单处理：瞳孔移动范围限制在±8px
+          if (!touchX || !touchY) return;
+
+          const btnCenterX = btnRect.left + btnRect.width / 2;
+          const btnCenterY = btnRect.top + btnRect.height / 2;
+          const deltaX = touchX - btnCenterX;
+          const deltaY = touchY - btnCenterY;
+          const maxMove = 8;
+          const moveX = Math.min(maxMove, Math.max(-maxMove, deltaX * 0.15));
+          const moveY = Math.min(maxMove, Math.max(-maxMove, deltaY * 0.1));
+
+          leftPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+          rightPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        }
+
+        // 重置瞳孔
+        function resetPupils() {
+          leftPupil.style.transform = `translate(0,0)`;
+          rightPupil.style.transform = `translate(0,0)`;
+        }
+
+        // 触摸逻辑
+        let activeTouchId = null;
+        let lastTouchPos = null;
+        let animActive = false;
+
+        function startBubbleAnim(touch) {
+          if (!animActive) {
+            animActive = true;
+            drawBubbles(touch);
+          }
+        }
+
+        function handleTouchStart(e) {
+          e.preventDefault();
+          const touch = e.touches[0];
+          if (!touch) return;
+          activeTouchId = touch.identifier;
+          lastTouchPos = touch;
+
+          for (let i = 0; i < 8; i++) {
+            addBubble(touch.clientX, touch.clientY);
+          }
+          startBubbleAnim(touch);
+          updatePupils(touch.clientX, touch.clientY);
+
+          // 按钮按压样式已经由css active处理
+        }
+
+        function handleTouchMove(e) {
+          e.preventDefault();
+          let matchTouch = null;
+          for (let i = 0; i < e.touches.length; i++) {
+            if (e.touches[i].identifier === activeTouchId) {
+              matchTouch = e.touches[i];
+              break;
+            }
+          }
+          if (!matchTouch) return;
+          lastTouchPos = matchTouch;
+          updatePupils(matchTouch.clientX, matchTouch.clientY);
+          // 动画循环中会自动生成泡泡
+        }
+
+        function handleTouchEnd(e) {
+          e.preventDefault();
+          if (e.touches.length === 0) {
+            activeTouchId = null;
+            lastTouchPos = null;
+            resetPupils();
+          } else {
+            activeTouchId = e.touches[0].identifier;
+            lastTouchPos = e.touches[0];
+            updatePupils(lastTouchPos.clientX, lastTouchPos.clientY);
+          }
+        }
+
+        cuteBtn.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
+        cuteBtn.addEventListener("touchmove", handleTouchMove, {
+          passive: false,
+        });
+        cuteBtn.addEventListener("touchend", handleTouchEnd, {
+          passive: false,
+        });
+        cuteBtn.addEventListener("touchcancel", handleTouchEnd, {
+          passive: false,
+        });
+
+        // 鼠标调试支持
+        cuteBtn.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          const fakeTouch = {
+            clientX: e.clientX,
+            clientY: e.clientY,
+            identifier: 1,
+          };
+          handleTouchStart({ touches: [fakeTouch], preventDefault: () => {} });
+          const onMove = (me) => {
+            me.preventDefault();
+            handleTouchMove({
+              touches: [
+                { clientX: me.clientX, clientY: me.clientY, identifier: 1 },
+              ],
+              preventDefault: () => {},
+            });
+          };
+          const onUp = (ue) => {
+            ue.preventDefault();
+            handleTouchEnd({ touches: [], preventDefault: () => {} });
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+          };
+          document.addEventListener("mousemove", onMove);
+          document.addEventListener("mouseup", onUp);
+        });
+
+        window.addEventListener("resize", resizeCanvas);
+        setTimeout(resizeCanvas, 20);
+        resizeCanvas();
+      })();
+    </script>
+  </body>
+</html>
