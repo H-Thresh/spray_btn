@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>tech · 喷药按钮）</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        min-height: 100vh;
+        background: radial-gradient(circle at 30% 40%, #102b3f, #020a14);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        padding: 16px;
+        margin: 0;
+        touch-action: manipulation;
+      }
+      .container {
+        width: 100%;
+        max-width: 420px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+      }
+      .badge {
+        color: #7fc9ff;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+        font-weight: 400;
+        font-size: 15px;
+        text-shadow: 0 0 12px cyan, 0 0 25px #00a6ff;
+        border-bottom: 2px solid #2e5f88;
+        padding-bottom: 16px;
+        width: 100%;
+        text-align: center;
+        background: rgba(0, 20, 40, 0.5);
+        backdrop-filter: blur(6px);
+        border-radius: 60px;
+        padding: 12px 0;
+        border: 1px solid #2e6c9e;
+      }
+      .button-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 25px 0;
+      }
+      /* 主按钮 */
+      .tech-btn {
+        position: relative;
+        width: 240px;
+        height: 240px;
+        border-radius: 70px 70px 70px 70px;
+        background: linear-gradient(145deg, #112c40, #03141f);
+        border: 2px solid rgba(0, 255, 255, 0.4);
+        box-shadow: 0 25px 35px -10px black,
+          inset 0 -6px 10px rgba(0, 255, 255, 0.3),
+          inset 0 6px 12px rgba(255, 255, 255, 0.1),
+          0 0 0 3px rgba(0, 255, 255, 0.3), 0 0 20px #00ffff88;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.08s, box-shadow 0.2s;
+        touch-action: none;
+        outline: none;
+        z-index: 10;
+      }
+      .tech-btn:active {
+        transform: scale(0.96);
+      }
+      .btn-icon {
+        font-size: 70px;
+        line-height: 1;
+        margin-bottom: 8px;
+        filter: drop-shadow(0 0 14px cyan) drop-shadow(0 0 30px blue);
+        color: #ccf4ff;
+      }
+      .btn-label {
+        font-size: 28px;
+        font-weight: 700;
+        color: white;
+        text-shadow: 0 0 10px cyan, 0 0 25px #0099ff;
+        letter-spacing: 3px;
+        background: rgba(0, 255, 255, 0.1);
+        padding: 4px 20px;
+        border-radius: 50px;
+        backdrop-filter: blur(2px);
+        border: 1px solid cyan;
+      }
+
+      /* 动态光环 - 跟随手指 */
+      .follow-ring {
+        position: absolute;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(0, 255, 255, 0.8) 0%,
+          rgba(0, 150, 255, 0.3) 60%,
+          transparent 90%
+        );
+        filter: blur(12px);
+        pointer-events: none;
+        z-index: 8;
+        opacity: 0;
+        transition: opacity 0.1s;
+        mix-blend-mode: screen;
+        will-change: left, top;
+      }
+      /* 固定扫描环 */
+      .scan-ring {
+        position: absolute;
+        top: -16px;
+        left: -16px;
+        right: -16px;
+        bottom: -16px;
+        border-radius: 86px;
+        border: 2px solid rgba(0, 255, 255, 0.3);
+        box-shadow: 0 0 30px cyan, inset 0 0 20px cyan;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        z-index: 5;
+        animation: pulseScan 2s infinite;
+      }
+      @keyframes pulseScan {
+        0% {
+          transform: scale(1);
+          opacity: 0.2;
+        }
+        50% {
+          transform: scale(1.02);
+          opacity: 0.6;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 0.2;
+        }
+      }
+      .tech-btn:hover .scan-ring,
+      .tech-btn:active .scan-ring {
+        opacity: 1;
+      }
+
+      /* 画布 */
+      #sparkCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 20;
+        border-radius: 70px;
+      }
+
+      /* 能量条 */
+      .energy-bar {
+        width: 200px;
+        height: 14px;
+        background: #0a1c2a;
+        border-radius: 20px;
+        border: 1px solid cyan;
+        box-shadow: inset 0 2px 6px black;
+        margin-top: 10px;
+        overflow: hidden;
+      }
+      .energy-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #00ffff, #0066ff);
+        border-radius: 20px;
+        box-shadow: 0 0 20px #00ffff;
+        transition: width 0.2s ease;
+      }
+      .hint {
+        color: #6fb3e0;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(0, 30, 50, 0.7);
+        backdrop-filter: blur(6px);
+        padding: 12px 25px;
+        border-radius: 50px;
+        border: 1px solid #2580b3;
+        letter-spacing: 1px;
+      }
+      .hint span {
+        font-size: 24px;
+        filter: drop-shadow(0 0 6px cyan);
+      }
+      /* 重置提示 */
+      .reset-tip {
+        color: #7fc9ff;
+        font-size: 14px;
+        background: rgba(0, 255, 255, 0.1);
+        padding: 6px 18px;
+        border-radius: 30px;
+        border: 1px dashed cyan;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="button-wrapper" id="techWrapper">
+        <!-- 跟随手指的光环 -->
+        <div class="follow-ring" id="followRing"></div>
+        <!-- 固定光环 -->
+        <div class="scan-ring" id="scanRing"></div>
+
+        <button class="tech-btn" id="techBtn">
+          <span class="btn-icon">⚡🧪⚡</span>
+          <span class="btn-label">喷药</span>
+        </button>
+
+        <canvas id="sparkCanvas" width="500" height="500"></canvas>
+      </div>
+
+      <!-- 能量条 -->
+      <div class="energy-bar">
+        <div class="energy-fill" id="energyFill"></div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const btn = document.getElementById("techBtn");
+        const canvas = document.getElementById("sparkCanvas");
+        const ctx = canvas.getContext("2d");
+        const followRing = document.getElementById("followRing");
+        const energyFill = document.getElementById("energyFill");
+
+        // 能量值 0-100
+        let energy = 0;
+        const MAX_ENERGY = 100;
+
+        // 粒子数组
+        let sparks = [];
+        const MAX_SPARKS = 90;
+
+        // 上次触摸位置
+        let lastTouchX = 0,
+          lastTouchY = 0;
+        let isTouching = false;
+
+        // 双击重置检测
+        let lastTapTime = 0;
+        const DOUBLE_TAP_DELAY = 300; // 300ms内双击算有效
+
+        // 重置所有效果
+        function resetAllEffects() {
+          // 清空粒子
+          sparks = [];
+          // 能量归零
+          energy = 0;
+          energyFill.style.width = "0%";
+          // 清空画布
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          // 隐藏光环
+          followRing.style.opacity = "0";
+          // 可选：闪烁提示
+          btn.style.transform = "scale(1.05)";
+          btn.style.boxShadow =
+            "0 0 60px red, inset 0 0 40px #ff00ff, 0 0 0 4px white";
+          setTimeout(() => {
+            btn.style.transform = "";
+            btn.style.boxShadow = "";
+          }, 200);
+
+          console.log("效果已重置");
+        }
+
+        // 检测双击 (兼容触摸和鼠标)
+        function handleDoubleTap(e) {
+          e.preventDefault(); // 防止缩放
+          const currentTime = new Date().getTime();
+          if (currentTime - lastTapTime < DOUBLE_TAP_DELAY) {
+            // 双击触发重置
+            resetAllEffects();
+            lastTapTime = 0; // 重置计时器，避免三次点击连续触发
+          } else {
+            lastTapTime = currentTime;
+          }
+        }
+
+        // 按钮中心
+        function getBtnRect() {
+          return btn.getBoundingClientRect();
+        }
+
+        // 更新光环位置
+        function updateFollowRing(x, y) {
+          if (!isTouching) {
+            followRing.style.opacity = "0";
+            return;
+          }
+          const rect = btn.getBoundingClientRect();
+          // 限制光环在按钮附近
+          const clampX = Math.min(rect.right + 30, Math.max(rect.left - 30, x));
+          const clampY = Math.min(rect.bottom + 30, Math.max(rect.top - 30, y));
+
+          followRing.style.left = clampX - 45 + "px";
+          followRing.style.top = clampY - 45 + "px";
+          followRing.style.opacity = "0.9";
+        }
+
+        // 添加火花
+        function addSpark(touchX, touchY, isMovingFast = false) {
+          const rect = getBtnRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+
+          const dx = touchX - centerX;
+          const dy = touchY - centerY;
+          const dist = Math.hypot(dx, dy) || 0.1;
+          const normX = dx / dist;
+          const normY = dy / dist;
+
+          const startX = centerX + normX * (rect.width * 0.4);
+          const startY = centerY + normY * (rect.height * 0.4);
+
+          const type = Math.floor(Math.random() * 3);
+          let speedBase = isMovingFast ? 1.6 : 0.9;
+          const speed = speedBase + Math.random() * 1.5;
+          const angleVar = (Math.random() - 0.5) * 0.8;
+          const angle = Math.atan2(dy, dx) + angleVar;
+
+          const vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.3;
+          const vy = Math.sin(angle) * speed + (Math.random() - 0.5) * 0.3;
+
+          let color, size;
+          if (type === 0) {
+            color = { r: 100, g: 220, b: 255 };
+            size = 8 + Math.random() * 18;
+          } else if (type === 1) {
+            color = { r: 0, g: 200, b: 255 };
+            size = 12 + Math.random() * 22;
+          } else {
+            color = { r: 150, g: 255, b: 255 };
+            size = 5 + Math.random() * 12;
+          }
+
+          sparks.push({
+            x: startX,
+            y: startY,
+            vx: vx,
+            vy: vy,
+            life: 1.0,
+            size: size,
+            color: color,
+            type: type,
+            spin: (Math.random() - 0.5) * 0.2,
+          });
+
+          // 能量增加
+          energy = Math.min(MAX_ENERGY, energy + 0.8);
+          energyFill.style.width = energy + "%";
+        }
+
+        // 绘制所有火花
+        function drawSparks(activeTouch = null) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          if (activeTouch) {
+            const rect = getBtnRect();
+            if (
+              activeTouch.clientX >= rect.left &&
+              activeTouch.clientX <= rect.right &&
+              activeTouch.clientY >= rect.top &&
+              activeTouch.clientY <= rect.bottom
+            ) {
+              for (let i = 0; i < 5; i++) {
+                addSpark(activeTouch.clientX, activeTouch.clientY, true);
+              }
+
+              energy = Math.min(MAX_ENERGY, energy + 0.3);
+              energyFill.style.width = energy + "%";
+            }
+          }
+
+          if (!activeTouch && energy > 0) {
+            energy = Math.max(0, energy - 0.15);
+            energyFill.style.width = energy + "%";
+          }
+
+          if (sparks.length > MAX_SPARKS) {
+            sparks = sparks.slice(-MAX_SPARKS);
+          }
+
+          const canvasRect = canvas.getBoundingClientRect();
+          const offsetX = canvasRect.left;
+          const offsetY = canvasRect.top;
+          const scaleX = canvas.width / canvasRect.width;
+          const scaleY = canvas.height / canvasRect.height;
+
+          for (let i = sparks.length - 1; i >= 0; i--) {
+            const s = sparks[i];
+
+            s.x += s.vx;
+            s.y += s.vy;
+            s.vx *= 0.985;
+            s.vy *= 0.985;
+            s.life -= 0.008;
+
+            if (
+              s.life <= 0.02 ||
+              s.y < -100 ||
+              s.y > window.innerHeight + 100 ||
+              s.x < -100 ||
+              s.x > window.innerWidth + 100
+            ) {
+              sparks.splice(i, 1);
+              continue;
+            }
+
+            const canvasX = (s.x - offsetX) * scaleX;
+            const canvasY = (s.y - offsetY) * scaleY;
+            const size = s.size * s.life;
+
+            ctx.save();
+            ctx.translate(canvasX, canvasY);
+            ctx.rotate(s.spin * sparks.length);
+            ctx.globalAlpha = s.life * 0.85;
+
+            if (s.type === 1) {
+              // 电光菱形
+              ctx.fillStyle = `rgba(${s.color.r}, ${s.color.g}, ${s.color.b}, ${s.life})`;
+              ctx.shadowColor = "#0cf";
+              ctx.shadowBlur = 25;
+              ctx.beginPath();
+              ctx.moveTo(0, -size * 0.5);
+              ctx.lineTo(size * 0.4, 0);
+              ctx.lineTo(0, size * 0.5);
+              ctx.lineTo(-size * 0.4, 0);
+              ctx.closePath();
+              ctx.fill();
+            } else if (s.type === 2) {
+              // 离子小圆
+              ctx.fillStyle = `rgba(200, 255, 255, ${s.life})`;
+              ctx.shadowBlur = 20;
+              ctx.beginPath();
+              ctx.arc(0, 0, size * 0.4, 0, 2 * Math.PI);
+              ctx.fill();
+              ctx.fillStyle = "white";
+              ctx.shadowBlur = 30;
+              ctx.beginPath();
+              ctx.arc(-3, -3, size * 0.15, 0, 2 * Math.PI);
+              ctx.fill();
+            } else {
+              // 水滴形火花
+              const gradient = ctx.createRadialGradient(
+                -5,
+                -5,
+                2,
+                0,
+                0,
+                size * 0.8
+              );
+              gradient.addColorStop(0, "#b0ffff");
+              gradient.addColorStop(0.5, "#00aaff");
+              gradient.addColorStop(1, "#004488");
+              ctx.fillStyle = gradient;
+              ctx.shadowColor = "#00ccff";
+              ctx.shadowBlur = 28;
+              ctx.beginPath();
+              ctx.ellipse(0, 0, size * 0.5, size * 0.2, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+
+          if (sparks.length > 0 || activeTouch || energy > 0) {
+            requestAnimationFrame(() => drawSparks(activeTouch));
+          } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+        }
+
+        // 触摸逻辑
+        let activeTouchId = null;
+        let lastTouchPos = null;
+        let animActive = false;
+
+        function startAnim(touch) {
+          if (!animActive) {
+            animActive = true;
+            drawSparks(touch);
+          }
+        }
+
+        function handleTouchStart(e) {
+          e.preventDefault();
+
+          // 检测双击 (触摸版)
+          handleDoubleTap(e);
+
+          const touch = e.touches[0];
+          if (!touch) return;
+
+          activeTouchId = touch.identifier;
+          lastTouchPos = touch;
+          isTouching = true;
+          lastTouchX = touch.clientX;
+          lastTouchY = touch.clientY;
+
+          updateFollowRing(touch.clientX, touch.clientY);
+
+          for (let i = 0; i < 15; i++) {
+            addSpark(touch.clientX, touch.clientY, true);
+          }
+          startAnim(touch);
+
+          btn.style.transform = "scale(0.96)";
+          btn.style.boxShadow =
+            "0 0 40px cyan, inset 0 0 30px #0cf, 0 0 0 4px cyan";
+          document.getElementById("scanRing").style.opacity = "1";
+        }
+
+        function handleTouchMove(e) {
+          e.preventDefault();
+          let matchTouch = null;
+          for (let i = 0; i < e.touches.length; i++) {
+            if (e.touches[i].identifier === activeTouchId) {
+              matchTouch = e.touches[i];
+              break;
+            }
+          }
+          if (!matchTouch) return;
+
+          lastTouchPos = matchTouch;
+          lastTouchX = matchTouch.clientX;
+          lastTouchY = matchTouch.clientY;
+          updateFollowRing(matchTouch.clientX, matchTouch.clientY);
+
+          for (let i = 0; i < 2; i++) {
+            addSpark(matchTouch.clientX, matchTouch.clientY, true);
+          }
+        }
+
+        function handleTouchEnd(e) {
+          e.preventDefault();
+          if (e.touches.length === 0) {
+            activeTouchId = null;
+            lastTouchPos = null;
+            isTouching = false;
+
+            followRing.style.opacity = "0";
+
+            btn.style.transform = "";
+            btn.style.boxShadow = "";
+            document.getElementById("scanRing").style.opacity = "";
+          } else {
+            activeTouchId = e.touches[0].identifier;
+            lastTouchPos = e.touches[0];
+            lastTouchX = e.touches[0].clientX;
+            lastTouchY = e.touches[0].clientY;
+            updateFollowRing(lastTouchX, lastTouchY);
+          }
+        }
+
+        // 监听触摸
+        btn.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
+        btn.addEventListener("touchmove", handleTouchMove, { passive: false });
+        btn.addEventListener("touchend", handleTouchEnd, { passive: false });
+        btn.addEventListener("touchcancel", handleTouchEnd, { passive: false });
+
+        // 鼠标模拟 (同时支持双击重置)
+        btn.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+
+          // 双击检测 (鼠标版)
+          handleDoubleTap(e);
+
+          const fakeTouch = {
+            clientX: e.clientX,
+            clientY: e.clientY,
+            identifier: 1,
+          };
+          handleTouchStart({ touches: [fakeTouch], preventDefault: () => {} });
+
+          const onMouseMove = (me) => {
+            me.preventDefault();
+            handleTouchMove({
+              touches: [
+                { clientX: me.clientX, clientY: me.clientY, identifier: 1 },
+              ],
+              preventDefault: () => {},
+            });
+          };
+          const onMouseUp = (ue) => {
+            ue.preventDefault();
+            handleTouchEnd({ touches: [], preventDefault: () => {} });
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+          };
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
+        });
+
+        // 初始化canvas尺寸
+        function resizeAll() {
+          const rect = btn.getBoundingClientRect();
+          canvas.style.top = rect.top + "px";
+          canvas.style.left = rect.left + "px";
+          canvas.style.width = rect.width + "px";
+          canvas.style.height = rect.height + "px";
+          canvas.width = rect.width * 2;
+          canvas.height = rect.height * 2;
+        }
+
+        window.addEventListener("resize", resizeAll);
+        setTimeout(resizeAll, 20);
+        resizeAll();
+
+        followRing.style.opacity = "0";
+
+        // 额外: 也可以双击document.body重置, 但保持只在按钮上
+      })();
+    </script>
+  </body>
+</html>
