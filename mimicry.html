@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>mimicry · 喷药按钮</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+
+      body {
+        min-height: 100vh;
+        background: linear-gradient(145deg, #d4d9e2 0%, #e8ecf2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        padding: 16px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 400px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 48px;
+        padding: 24px 0;
+      }
+
+      /* ----- 拟态按钮卡片 ----- */
+      .morphic-card {
+        background: #eef0f5;
+        width: 100%;
+        border-radius: 64px 64px 48px 48px;
+        box-shadow: 12px 12px 24px rgba(166, 180, 200, 0.5),
+          -12px -12px 24px rgba(255, 255, 255, 0.8),
+          inset 2px 2px 4px rgba(255, 255, 255, 0.6),
+          inset -3px -3px 6px rgba(166, 180, 200, 0.3);
+        padding: 32px 20px 40px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .morphic-title {
+        font-size: 1.8rem;
+        font-weight: 500;
+        color: #6d7588;
+        text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.6),
+          -1px -1px 2px rgba(0, 0, 0, 0.1);
+        letter-spacing: 2px;
+        margin-bottom: 32px;
+      }
+
+      /* 拟态按钮主体 */
+      .morphic-btn {
+        position: relative;
+        width: 220px;
+        height: 220px;
+        border-radius: 999px;
+        background: #eef0f5;
+        box-shadow: 16px 16px 30px rgba(166, 180, 200, 0.6),
+          -16px -16px 30px rgba(255, 255, 255, 0.7),
+          inset 4px 4px 8px rgba(255, 255, 255, 0.8),
+          inset -6px -6px 12px rgba(166, 180, 200, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+        margin-bottom: 16px;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      /* 按下时的拟态变化 (JS会动态添加类, 这里作为回放+动画起始) */
+      .morphic-btn.pressed {
+        box-shadow: 6px 6px 12px rgba(166, 180, 200, 0.5),
+          -6px -6px 12px rgba(255, 255, 255, 0.6),
+          inset 10px 10px 20px rgba(166, 180, 200, 0.5),
+          inset -10px -10px 20px rgba(255, 255, 255, 0.7);
+        transform: scale(0.98);
+      }
+
+      /* 内部icon */
+      .morphic-icon {
+        font-size: 5rem;
+        filter: drop-shadow(4px 6px 8px rgba(166, 180, 200, 0.6));
+        color: #4f5b6b;
+        transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+      }
+
+      .morphic-btn.pressed .morphic-icon {
+        transform: scale(0.9) translateY(4px);
+        filter: drop-shadow(2px 3px 4px rgba(166, 180, 200, 0.8));
+      }
+
+      /* 水滴/喷洒粒子 (拟态) */
+      .spray-drops {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      .drop {
+        position: absolute;
+        background: rgba(155, 206, 235, 0.5);
+        border-radius: 60% 40% 70% 30%;
+        width: 12px;
+        height: 18px;
+        transform: rotate(20deg);
+        filter: blur(1px);
+        box-shadow: 0 4px 8px rgba(78, 138, 177, 0.3);
+        opacity: 0;
+      }
+
+      /* 跟随手指的光晕 (拟态用半透明白色) */
+      .morphic-follower {
+        position: fixed; /* 相对于视口，跟随手指 */
+        width: 100px;
+        height: 100px;
+        border-radius: 999px;
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba(255, 255, 255, 0.7) 0%,
+          rgba(230, 240, 250, 0.2) 70%
+        );
+        backdrop-filter: blur(3px);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0;
+        transition: opacity 0.1s ease;
+        mix-blend-mode: soft-light;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .morphic-follower.active {
+        opacity: 0.9;
+      }
+
+      /* 文字说明 */
+      .hint {
+        color: #6d7a8c;
+        font-size: 1rem;
+        padding: 8px 24px;
+        border-radius: 60px;
+        background: #eef0f5;
+        box-shadow: inset 3px 3px 6px rgba(166, 180, 200, 0.3),
+          inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+        font-weight: 400;
+        margin-top: 16px;
+      }
+
+      .badge {
+        background: #eef0f5;
+        border-radius: 30px;
+        padding: 4px 18px;
+        font-size: 0.9rem;
+        color: #5d6a7c;
+        box-shadow: 0 4px 8px rgba(166, 180, 200, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- 拟态质感版本卡片 -->
+      <div class="morphic-card">
+        <!-- 按钮区域 -->
+        <div id="morphicBtn" class="morphic-btn">
+          <div class="morphic-icon">🧪</div>
+          <div id="morphicDrops" class="spray-drops"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 跟随手指的拟态光晕 -->
+    <div id="morphicFollower" class="morphic-follower"></div>
+
+    <script>
+      (function () {
+        // 拟态按钮元素
+        const morphicBtn = document.getElementById("morphicBtn");
+        const morphicDrops = document.getElementById("morphicDrops");
+        const follower = document.getElementById("morphicFollower");
+
+        // 粒子生成函数
+        function createSpray(centerX, centerY) {
+          for (let i = 0; i < 8; i++) {
+            const drop = document.createElement("div");
+            drop.className = "drop";
+            // 随机大小与偏移
+            const size = 12 + Math.random() * 16;
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 30 + Math.random() * 70; // 喷射半径
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance - 10; // 略微向上飘散
+
+            // 随机透明度与颜色微调
+            const blueShade = 180 + Math.floor(Math.random() * 60);
+            drop.style.background = `rgba(140, 200, 240, ${
+              0.4 + Math.random() * 0.3
+            })`;
+            drop.style.width = `${size * 0.7}px`;
+            drop.style.height = `${size}px`;
+            drop.style.left = `50%`;
+            drop.style.top = `50%`;
+            drop.style.transform = `translate(-50%, -50%) translate(${tx}px, ${ty}px) rotate(${
+              Math.random() * 40
+            }deg)`;
+            drop.style.transition =
+              "opacity 0.2s linear, transform 0.4s cubic-bezier(0.2,0.8,0.2,1)";
+            drop.style.opacity = "0";
+
+            morphicDrops.appendChild(drop);
+
+            // 强制重绘后激活动画
+            setTimeout(() => {
+              drop.style.opacity = "0.8";
+              drop.style.transform = `translate(-50%, -50%) translate(${
+                tx * 1.5
+              }px, ${ty * 1.8}px) rotate(${Math.random() * 90}deg)`;
+              drop.style.width = `${size * 0.3}px`;
+              drop.style.height = `${size * 0.8}px`;
+            }, 10);
+
+            // 渐渐消失并移除
+            setTimeout(() => {
+              drop.style.opacity = "0";
+              drop.style.transform = `translate(-50%, -50%) translate(${
+                tx * 2.2
+              }px, ${ty * 2.5}px) rotate(${Math.random() * 120}deg)`;
+              setTimeout(() => {
+                if (drop.parentNode) drop.remove();
+              }, 300);
+            }, 250);
+          }
+        }
+
+        // 手指/鼠标按下处理 (模拟喷药)
+        function onPress(event) {
+          event.preventDefault(); // 阻止默认滚动或菜单
+
+          // 添加按压态样式
+          morphicBtn.classList.add("pressed");
+
+          // 获取触碰点坐标用于生成粒子 (围绕按钮中心偏下作为喷口)
+          let clientX, clientY;
+          if (event.touches) {
+            clientX = event.touches[0].clientX;
+            clientY = event.touches[0].clientY;
+          } else {
+            clientX = event.clientX;
+            clientY = event.clientY;
+          }
+
+          // 但我们可以以按钮中心为基准稍微偏下模拟喷头
+          const rect = morphicBtn.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2 + 15; // 偏下喷口
+
+          // 生成喷洒粒子
+          createSpray(centerX, centerY);
+          // 再加一点额外粒子
+          setTimeout(() => {
+            if (morphicBtn.classList.contains("pressed")) {
+              createSpray(centerX, centerY - 5);
+            }
+          }, 50);
+        }
+
+        function releasePress() {
+          morphicBtn.classList.remove("pressed");
+        }
+
+        // 手指跟随移动更新光晕
+        function updateFollower(event) {
+          let clientX, clientY;
+          if (event.touches) {
+            clientX = event.touches[0].clientX;
+            clientY = event.touches[0].clientY;
+          } else {
+            clientX = event.clientX;
+            clientY = event.clientY;
+          }
+          follower.style.left = clientX + "px";
+          follower.style.top = clientY + "px";
+          follower.classList.add("active");
+        }
+
+        function hideFollower() {
+          follower.classList.remove("active");
+        }
+
+        // 触摸/鼠标事件绑定
+        morphicBtn.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          onPress(e);
+          updateFollower(e);
+        });
+
+        morphicBtn.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          onPress(e);
+          updateFollower(e);
+        });
+
+        // 在window上监听移动以更新跟随
+        window.addEventListener("touchmove", (e) => {
+          e.preventDefault();
+          if (e.touches.length > 0) {
+            updateFollower(e);
+          }
+        });
+
+        window.addEventListener("mousemove", (e) => {
+          // 只有按下时才跟随(通过检查follower active或者按钮pressed)
+          if (morphicBtn.classList.contains("pressed")) {
+            updateFollower(e);
+          }
+        });
+
+        // 释放: touchend / mouseup / leave
+        window.addEventListener("touchend", (e) => {
+          e.preventDefault();
+          releasePress();
+          hideFollower();
+        });
+
+        window.addEventListener("mouseup", () => {
+          releasePress();
+          hideFollower();
+        });
+
+        morphicBtn.addEventListener("mouseleave", () => {
+          // 如果鼠标离开按钮同时松开(但有可能依然按住，为了体验取消按下效果)
+          releasePress();
+          hideFollower();
+        });
+
+        // 防止拖拽选中
+        morphicBtn.addEventListener("dragstart", (e) => e.preventDefault());
+
+        // 初始隐藏
+        hideFollower();
+      })();
+    </script>
+  </body>
+</html>
